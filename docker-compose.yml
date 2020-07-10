@@ -108,16 +108,16 @@ services:
     restart: always
     ports:
       - "${CWA_VERIFICATION_FAKE_PORT}:8004"
-  verification:
-    image: docker.pkg.github.com/akali/cwa-verification-server/dev:latest
-    restart: always
-    ports:
-      - "${CWA_VERIFICATION_PORT}:8080"
-  verification-iam:
-    image: docker.pkg.github.com/akali/cwa-verification-iam/dev:latest
-    restart: always
-    ports:
-      - "${IAM_VERIFICATION_PORT}:8080"
+#  verification:
+#    image: docker.pkg.github.com/akali/cwa-verification-server/dev:latest
+#    restart: always
+#    ports:
+#      - "${CWA_VERIFICATION_PORT}:8080"
+#  verification-iam:
+#    image: docker.pkg.github.com/akali/cwa-verification-iam/dev:latest
+#    restart: always
+#    ports:
+#      - "${IAM_VERIFICATION_PORT}:8080"
 #  verification-portal:
 #    image: docker.pkg.github.comm/akali/cwa-verification-portal/dev:latest
 #    restart: always
