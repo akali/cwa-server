@@ -1,4 +1,10 @@
 version: '3'
+networks:
+  default:
+    external:
+      name: cwa_net
+
+
 services:
   submission:
     build:
@@ -8,8 +14,8 @@ services:
       - postgres
       - verification-fake
     ports:
-      - "8000:8080"
-      - "8006:8081"
+      - "${SUBMISSION_PORT1}:8080"
+      - "${SUBMISSION_PORT2}:8081"
     environment:
       SPRING_PROFILES_ACTIVE: dev,disable-ssl-server,disable-ssl-client-postgres,disable-ssl-client-verification,disable-ssl-client-verification-verify-hostname
       POSTGRESQL_SERVICE_PORT: '5432'
@@ -25,9 +31,9 @@ services:
       context: ./
       dockerfile: ./services/distribution/Dockerfile
     depends_on:
-     - postgres
-     - objectstore
-     - create-bucket
+      - postgres
+      - objectstore
+      - create-bucket
     environment:
       SPRING_PROFILES_ACTIVE: dev,signature-dev,testdata,disable-ssl-client-postgres
       POSTGRESQL_SERVICE_PORT: '5432'
@@ -40,8 +46,9 @@ services:
       # Settings for the S3 compatible objectstore
       CWA_OBJECTSTORE_ACCESSKEY: ${OBJECTSTORE_ACCESSKEY}
       CWA_OBJECTSTORE_SECRETKEY: ${OBJECTSTORE_SECRETKEY}
+
       CWA_OBJECTSTORE_ENDPOINT: http://objectstore
-      CWA_OBJECTSTORE_BUCKET: cwa
+      CWA_OBJECTSTORE_BUCKET: ${OBJECTSTORE_BUCKET}
       CWA_OBJECTSTORE_PORT: 8000
       services.distribution.paths.output: /tmp/distribution
       # Settings for cryptographic artifacts
@@ -51,25 +58,23 @@ services:
   postgres:
     image: postgres:11.8
     restart: always
-    ports:
-      - "8001:5432"
     environment:
       PGDATA: /data/postgres
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-       - postgres_volume:/data/postgres
-       - ./setup/setup-roles.sql:/docker-entrypoint-initdb.d/1-roles.sql
-       - ./local-setup/create-users.sql:/docker-entrypoint-initdb.d/2-users.sql
-       - ./local-setup/enable-test-data-docker-compose.sql:/docker-entrypoint-initdb.d/3-enable-testdata.sql
+      - postgres_volume:/data/postgres
+      - ./setup/setup-roles.sql:/docker-entrypoint-initdb.d/1-roles.sql
+      - ./local-setup/create-users.sql:/docker-entrypoint-initdb.d/2-users.sql
+      - ./local-setup/enable-test-data-docker-compose.sql:/docker-entrypoint-initdb.d/3-enable-testdata.sql
   pgadmin:
     container_name: pgadmin_container
     image: dpage/pgadmin4
     volumes:
-       - pgadmin_volume:/root/.pgadmin
+      - pgadmin_volume:/root/.pgadmin
     ports:
-      - "8002:80"
+      - "${PGADMIN_PORT}:80"
     restart: unless-stopped
     depends_on:
       - postgres
@@ -81,7 +86,7 @@ services:
     volumes:
       - objectstore_volume:/data
     ports:
-      - "8003:8000"
+      - "${CLOUDSERVER_PORT}:8000"
     environment:
       ENDPOINT: objectstore
       REMOTE_MANAGEMENT_DISABLE: 1
@@ -95,15 +100,44 @@ services:
     entrypoint: ["/root/scripts/wait-for-it/wait-for-it.sh", "objectstore:8000", "-t", "30", "--"]
     volumes:
       - ./scripts/wait-for-it:/root/scripts/wait-for-it
-    command: aws s3api create-bucket --bucket cwa --endpoint-url http://objectstore:8000 --acl public-read
+    command: aws s3api create-bucket --bucket ${OBJECTSTORE_BUCKET} --endpoint-url http://objectstore:8000 --acl public-read
     depends_on:
       - objectstore
   verification-fake:
     image: lilienthal/cwa-verification-fake:0.0.3
     restart: always
     ports:
-      - "8004:8004"
+      - "${CWA_VERIFICATION_FAKE_PORT}:8004"
+  verification:
+    image: docker.pkg.github.com/akali/cwa-verification-server/dev:latest
+    restart: always
+    ports:
+      - "${CWA_VERIFICATION_PORT}:8080"
+  verification-iam:
+    image: docker.pkg.github.com/akali/cwa-verification-iam/dev:latest
+    restart: always
+    ports:
+      - "${IAM_VERIFICATION_PORT}:8080"
+#  verification-portal:
+#    image: docker.pkg.github.comm/akali/cwa-verification-portal/dev:latest
+#    restart: always
+
 volumes:
   postgres_volume:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: $PWD/volumes/postgres
   pgadmin_volume:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: $PWD/volumes/pgadmin
   objectstore_volume:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: $PWD/volumes/objectstore
