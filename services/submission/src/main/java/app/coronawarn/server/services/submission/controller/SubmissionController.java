@@ -28,6 +28,7 @@ import app.coronawarn.server.services.submission.config.SubmissionServiceConfig;
 import app.coronawarn.server.services.submission.monitoring.SubmissionMonitor;
 import app.coronawarn.server.services.submission.validation.ValidSubmissionPayload;
 import app.coronawarn.server.services.submission.verification.TanVerifier;
+import com.google.protobuf.TextFormat;
 import io.micrometer.core.annotation.Timed;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -87,6 +88,8 @@ public class SubmissionController {
   public DeferredResult<ResponseEntity<Void>> submitDiagnosisKey(
       @ValidSubmissionPayload @RequestBody SubmissionPayload exposureKeys,
       @RequestHeader("cwa-authorization") String tan) {
+    logger.info(String.format("submitDiagnosisKey Tan: %s", tan.toString()));
+    logger.info(String.format("submitDiagnosisKey exposureKeys: %s", TextFormat.printer().printToString(exposureKeys)));
     submissionMonitor.incrementRequestCounter();
     submissionMonitor.incrementRealRequestCounter();
     return buildRealDeferredResult(exposureKeys, tan);

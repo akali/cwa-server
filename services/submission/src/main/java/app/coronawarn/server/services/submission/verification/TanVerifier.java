@@ -72,7 +72,7 @@ public class TanVerifier {
    */
   private boolean verifyWithVerificationService(Tan tan) {
     try {
-      logger.info("Calling Verification Service for TAN verification ...");
+      logger.info(String.format("Calling Verification Service for TAN verification {%s}", tan.toString()));
       verificationServerClient.verifyTan(tan);
       logger.info("Received response from Verification Service");
       return true;
