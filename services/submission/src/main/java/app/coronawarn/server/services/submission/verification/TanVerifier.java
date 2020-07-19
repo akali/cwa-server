@@ -23,6 +23,7 @@ package app.coronawarn.server.services.submission.verification;
 import feign.FeignException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 
@@ -52,8 +53,10 @@ public class TanVerifier {
    * @throws RestClientException if status code is neither 2xx nor 4xx
    */
   public boolean verifyTan(String tanString) {
+    logger.info(String.format("verifyTan: %s", tanString));
     try {
       Tan tan = Tan.of(tanString);
+      logger.info(String.format("verifyTan tan: %s", tan.toString()));
 
       return verifyWithVerificationService(tan);
     } catch (IllegalArgumentException e) {
@@ -63,6 +66,12 @@ public class TanVerifier {
     }
   }
 
+  @Value("${services.submission.verification.base-url}")
+  private String baseUrl;
+
+  @Value("services.submission.verification.path")
+  private String path;
+
   /**
    * Queries the configured verification service to validate the provided TAN.
    *
@@ -71,6 +80,9 @@ public class TanVerifier {
    * @throws RestClientException if http status code is neither 2xx nor 404
    */
   private boolean verifyWithVerificationService(Tan tan) {
+
+    logger.info(String.format("verifyWithVerificationService url: %s", baseUrl + path));
+
     try {
       logger.info(String.format("Calling Verification Service for TAN verification {%s}", tan.toString()));
       verificationServerClient.verifyTan(tan);
